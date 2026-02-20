@@ -1,37 +1,39 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
-import { dashboardStats, mockActivities, mockTasks, mockLeads, weeklyLeadData, performanceData } from '@/data/mockData';
+import { useCRM } from '@/context/CRMContext';
+import { weeklyLeadData, performanceData } from '@/data/mockData';
 import { Users, CalendarCheck, ListTodo, TrendingUp, IndianRupee, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LEAD_STATUS_CONFIG } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  const urgentTasks = mockTasks.filter(t => t.status !== 'completed').slice(0, 5);
+  const { leads, activities, tasks, stats } = useCRM();
+  const navigate = useNavigate();
+  const urgentTasks = tasks.filter(t => t.status !== 'completed').slice(0, 5);
+  const recentLeads = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   return (
     <AppLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Good morning, Rajesh</h1>
           <p className="text-sm text-muted-foreground mt-1">Here's your sales overview for today</p>
         </div>
 
-        {/* Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MetricCard title="Today's Leads" value={dashboardStats.todayLeads} change="+2 from yesterday" changeType="positive" icon={Users} />
-          <MetricCard title="Follow-ups Due" value={dashboardStats.followUpsDue} change="3 urgent" changeType="negative" icon={ListTodo} />
-          <MetricCard title="Site Visits" value={dashboardStats.siteVisitsScheduled} subtitle="This week" icon={CalendarCheck} />
-          <MetricCard title="Bookings" value={dashboardStats.bookingsThisMonth} subtitle="This month" icon={Target} />
-          <MetricCard title="Conversion" value={`${dashboardStats.conversionRate}%`} change="+1.2% this week" changeType="positive" icon={TrendingUp} />
-          <MetricCard title="Revenue" value={dashboardStats.revenue} subtitle="This month" icon={IndianRupee} />
+          <MetricCard title="Total Leads" value={stats.totalLeads} subtitle="All time" icon={Users} />
+          <MetricCard title="Today's Leads" value={stats.todayLeads} change={`${stats.todayLeads} new today`} changeType="positive" icon={Users} />
+          <MetricCard title="Follow-ups Due" value={stats.followUpsDue} change={`${tasks.filter(t => t.status === 'overdue').length} overdue`} changeType="negative" icon={ListTodo} />
+          <MetricCard title="Site Visits" value={stats.siteVisitsScheduled} subtitle="Scheduled" icon={CalendarCheck} />
+          <MetricCard title="Bookings" value={stats.bookingsThisMonth} subtitle="This month" icon={Target} />
+          <MetricCard title="Conversion" value={`${stats.conversionRate}%`} change="Lead to booking" changeType="neutral" icon={TrendingUp} />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Weekly chart */}
           <Card className="lg:col-span-2 glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Weekly Leads Overview</CardTitle>
@@ -43,14 +45,7 @@ const Index = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
                     <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        fontSize: '12px',
-                      }}
-                    />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
                     <Bar dataKey="leads" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="conversions" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -59,21 +54,16 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Pipeline summary */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Pipeline Summary</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {Object.entries(LEAD_STATUS_CONFIG).map(([status, config]) => {
-                const count = mockLeads.filter(l => l.status === status).length;
+                const count = leads.filter(l => l.status === status).length;
                 return (
                   <div key={status} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className={`${config.color} text-[10px] px-2`}>
-                        {config.label}
-                      </Badge>
-                    </div>
+                    <Badge variant="secondary" className={`${config.color} text-[10px] px-2`}>{config.label}</Badge>
                     <span className="text-sm font-semibold">{count}</span>
                   </div>
                 );
@@ -83,43 +73,42 @@ const Index = () => {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">
-          {/* Recent activity */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <ActivityFeed activities={mockActivities.slice(0, 6)} />
+              <ActivityFeed activities={activities.slice(0, 6)} />
             </CardContent>
           </Card>
 
-          {/* Upcoming tasks */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Pending Tasks</CardTitle>
+              <CardTitle className="text-sm font-semibold">Recent Leads</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {urgentTasks.map(task => (
-                <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors">
-                  <div className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
-                    task.priority === 'urgent' ? 'bg-destructive' :
-                    task.priority === 'high' ? 'bg-warning' :
-                    'bg-muted-foreground'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{task.title}</p>
-                    <p className="text-xs text-muted-foreground">{task.leadName} · {task.assignedToName}</p>
+              {recentLeads.map(lead => (
+                <div
+                  key={lead.id}
+                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
+                >
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
+                    {lead.name.split(' ').map(n => n[0]).join('')}
                   </div>
-                  {task.status === 'overdue' && (
-                    <Badge variant="destructive" className="text-[10px] shrink-0">Overdue</Badge>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{lead.name}</p>
+                    <p className="text-xs text-muted-foreground">{lead.projectInterest} · {lead.budget}</p>
+                  </div>
+                  <Badge variant="secondary" className={`${LEAD_STATUS_CONFIG[lead.status].color} text-[10px]`}>
+                    {LEAD_STATUS_CONFIG[lead.status].label}
+                  </Badge>
                 </div>
               ))}
             </CardContent>
           </Card>
         </div>
 
-        {/* Team performance */}
         <Card className="glass-card border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Team Performance</CardTitle>
