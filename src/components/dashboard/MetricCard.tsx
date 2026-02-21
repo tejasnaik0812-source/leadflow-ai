@@ -8,11 +8,15 @@ interface MetricCardProps {
   changeType?: 'positive' | 'negative' | 'neutral';
   icon: LucideIcon;
   subtitle?: string;
+  onClick?: () => void;
 }
 
-export function MetricCard({ title, value, change, changeType = 'neutral', icon: Icon, subtitle }: MetricCardProps) {
+export function MetricCard({ title, value, change, changeType = 'neutral', icon: Icon, subtitle, onClick }: MetricCardProps) {
   return (
-    <div className="glass-card rounded-xl p-4 lead-card-hover">
+    <div
+      className={cn('glass-card rounded-xl p-4 lead-card-hover', onClick && 'cursor-pointer')}
+      onClick={onClick}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
