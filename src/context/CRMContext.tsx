@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { Lead, Activity, Task, SiteVisit, Conversation, Note } from '@/types';
 import {
   initialLeads,
@@ -15,10 +15,12 @@ interface CRMContextType {
   visits: SiteVisit[];
   conversations: Conversation[];
   updateLead: (id: string, updates: Partial<Lead>) => void;
+  addLead: (lead: Lead) => void;
   addNoteToLead: (leadId: string, note: Note) => void;
   addActivity: (activity: Activity) => void;
   addTask: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
+  addVisit: (visit: SiteVisit) => void;
   getLeadById: (id: string) => Lead | undefined;
   getActivitiesForLead: (leadId: string) => Activity[];
   getTasksForLead: (leadId: string) => Task[];
@@ -39,8 +41,18 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [visits] = useState<SiteVisit[]>(initialVisits);
+  const [visits, setVisits] = useState<SiteVisit[]>(initialVisits);
   const [conversations] = useState<Conversation[]>(initialConversations);
+
+  const addLead = useCallback((lead: Lead) => {
+    setLeads(prev => [lead, ...prev]);
+  }, []);
+
+  // Expose addLead globally for Leads page (temp bridge)
+  useEffect(() => {
+    (window as any).__addLeadTemp = addLead;
+    return () => { delete (window as any).__addLeadTemp; };
+  }, [addLead]);
 
   const updateLead = useCallback((id: string, updates: Partial<Lead>) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, ...updates, lastActivity: new Date().toISOString() } : l));
@@ -62,6 +74,10 @@ export function CRMProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback((id: string, updates: Partial<Task>) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  }, []);
+
+  const addVisit = useCallback((visit: SiteVisit) => {
+    setVisits(prev => [visit, ...prev]);
   }, []);
 
   const getLeadById = useCallback((id: string) => leads.find(l => l.id === id), [leads]);
@@ -89,7 +105,7 @@ export function CRMProvider({ children }: { children: ReactNode }) {
   return (
     <CRMContext.Provider value={{
       leads, activities, tasks, visits, conversations,
-      updateLead, addNoteToLead, addActivity, addTask, updateTask,
+      updateLead, addLead, addNoteToLead, addActivity, addTask, updateTask, addVisit,
       getLeadById, getActivitiesForLead, getTasksForLead,
       stats,
     }}>

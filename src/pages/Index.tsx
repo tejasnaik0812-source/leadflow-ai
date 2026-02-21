@@ -3,7 +3,7 @@ import { MetricCard } from '@/components/dashboard/MetricCard';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { useCRM } from '@/context/CRMContext';
 import { weeklyLeadData, performanceData } from '@/data/mockData';
-import { Users, CalendarCheck, ListTodo, TrendingUp, IndianRupee, Target } from 'lucide-react';
+import { Users, CalendarCheck, ListTodo, TrendingUp, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LEAD_STATUS_CONFIG } from '@/types';
@@ -13,7 +13,6 @@ import { useNavigate } from 'react-router-dom';
 const Index = () => {
   const { leads, activities, tasks, stats } = useCRM();
   const navigate = useNavigate();
-  const urgentTasks = tasks.filter(t => t.status !== 'completed').slice(0, 5);
   const recentLeads = [...leads].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   return (
@@ -25,12 +24,12 @@ const Index = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MetricCard title="Total Leads" value={stats.totalLeads} subtitle="All time" icon={Users} />
-          <MetricCard title="Today's Leads" value={stats.todayLeads} change={`${stats.todayLeads} new today`} changeType="positive" icon={Users} />
-          <MetricCard title="Follow-ups Due" value={stats.followUpsDue} change={`${tasks.filter(t => t.status === 'overdue').length} overdue`} changeType="negative" icon={ListTodo} />
-          <MetricCard title="Site Visits" value={stats.siteVisitsScheduled} subtitle="Scheduled" icon={CalendarCheck} />
-          <MetricCard title="Bookings" value={stats.bookingsThisMonth} subtitle="This month" icon={Target} />
-          <MetricCard title="Conversion" value={`${stats.conversionRate}%`} change="Lead to booking" changeType="neutral" icon={TrendingUp} />
+          <MetricCard title="Total Leads" value={stats.totalLeads} subtitle="All time" icon={Users} onClick={() => navigate('/leads')} />
+          <MetricCard title="Today's Leads" value={stats.todayLeads} change={`${stats.todayLeads} new today`} changeType="positive" icon={Users} onClick={() => navigate('/leads')} />
+          <MetricCard title="Follow-ups Due" value={stats.followUpsDue} change={`${tasks.filter(t => t.status === 'overdue').length} overdue`} changeType="negative" icon={ListTodo} onClick={() => navigate('/follow-ups')} />
+          <MetricCard title="Site Visits" value={stats.siteVisitsScheduled} subtitle="Scheduled" icon={CalendarCheck} onClick={() => navigate('/site-visits')} />
+          <MetricCard title="Bookings" value={stats.bookingsThisMonth} subtitle="This month" icon={Target} onClick={() => navigate('/pipeline')} />
+          <MetricCard title="Conversion" value={`${stats.conversionRate}%`} change="Lead to booking" changeType="neutral" icon={TrendingUp} onClick={() => navigate('/pipeline')} />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
@@ -62,7 +61,7 @@ const Index = () => {
               {Object.entries(LEAD_STATUS_CONFIG).map(([status, config]) => {
                 const count = leads.filter(l => l.status === status).length;
                 return (
-                  <div key={status} className="flex items-center justify-between">
+                  <div key={status} className="flex items-center justify-between cursor-pointer hover:bg-muted/30 rounded-lg p-1.5 -mx-1.5 transition-colors" onClick={() => navigate('/pipeline')}>
                     <Badge variant="secondary" className={`${config.color} text-[10px] px-2`}>{config.label}</Badge>
                     <span className="text-sm font-semibold">{count}</span>
                   </div>

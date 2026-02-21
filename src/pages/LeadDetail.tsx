@@ -8,12 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { mockUsers } from '@/data/mockData';
+import { toast } from 'sonner';
 import {
   ArrowLeft, Phone, Mail, Edit2, Save, X, Plus,
   CalendarIcon, Clock, FileText, MessageCircle, MapPin, ArrowRight, Users,
@@ -73,6 +74,7 @@ const LeadDetail = () => {
       });
     }
     setEditing(false);
+    toast.success('Lead updated successfully!');
   };
 
   const handleAddFollowUp = () => {
@@ -101,9 +103,9 @@ const LeadDetail = () => {
     setFollowUpDate(undefined);
     setFollowUpAssignee('');
     setFollowUpOpen(false);
+    toast.success('Follow-up saved!');
   };
 
-  // Merge notes and activities into a unified timeline
   const timeline = [
     ...leadActivities.map(a => ({ id: a.id, type: a.type, text: a.description, date: a.createdAt, by: a.createdBy })),
     ...lead.notes.map(n => ({ id: n.id, type: 'note' as const, text: n.content, date: n.createdAt, by: n.createdBy })),
@@ -123,7 +125,6 @@ const LeadDetail = () => {
   return (
     <AppLayout>
       <div className="space-y-4 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/leads')}>
             <ArrowLeft className="h-4 w-4" />
@@ -145,6 +146,7 @@ const LeadDetail = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Schedule Follow-Up</DialogTitle>
+                  <DialogDescription>Add a follow-up task for {lead.name}.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div>
@@ -199,7 +201,6 @@ const LeadDetail = () => {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-4">
-          {/* Lead Info */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Contact Details</CardTitle>
@@ -251,7 +252,6 @@ const LeadDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Pending Tasks */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Pending Tasks ({leadTasks.filter(t => t.status !== 'completed').length})</CardTitle>
@@ -286,7 +286,6 @@ const LeadDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Score & Quick Actions */}
           <Card className="glass-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Lead Score</CardTitle>
@@ -305,16 +304,15 @@ const LeadDetail = () => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mt-4">
-                <Button variant="outline" size="sm" className="gap-1 text-xs"><Phone className="h-3 w-3" /> Call</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs"><Mail className="h-3 w-3" /> Email</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs"><MessageCircle className="h-3 w-3" /> WhatsApp</Button>
-                <Button variant="outline" size="sm" className="gap-1 text-xs"><MapPin className="h-3 w-3" /> Site Visit</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => toast.info(`Calling ${lead.phone}`)}><Phone className="h-3 w-3" /> Call</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => toast.info(`Emailing ${lead.email}`)}><Mail className="h-3 w-3" /> Email</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => toast.info(`Opening WhatsApp for ${lead.phone}`)}><MessageCircle className="h-3 w-3" /> WhatsApp</Button>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate('/site-visits')}><MapPin className="h-3 w-3" /> Site Visit</Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Activity Timeline */}
         <Card className="glass-card border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Activity Timeline</CardTitle>
