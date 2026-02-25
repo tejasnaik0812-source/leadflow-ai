@@ -18,7 +18,7 @@ const Leads = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website' as LeadSource, assignedTo: 'u3' });
+  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website' as LeadSource, assignedTo: 'u3', initialRemark: '' });
 
   const filtered = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -37,32 +37,23 @@ const Leads = () => {
     }
     const assignee = mockUsers.find(u => u.id === newLead.assignedTo) || mockUsers[2];
     const id = `l-${Date.now()}`;
-    // Use updateLead via context — we need addLead, so let's use the context properly
-    // Since CRMContext doesn't have addLead, we'll add it
+    const now = new Date().toISOString();
+    const notes = newLead.initialRemark.trim()
+      ? [{ id: `n-${Date.now()}`, content: newLead.initialRemark.trim(), createdAt: now, createdBy: 'Rajesh Kumar' }]
+      : [];
     const lead = {
-      id,
-      name: newLead.name,
-      email: newLead.email,
-      phone: newLead.phone,
-      status: 'new' as LeadStatus,
-      source: newLead.source,
-      budget: newLead.budget,
-      projectInterest: newLead.projectInterest,
-      assignedTo: assignee.id,
-      assignedToName: assignee.name,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      notes: [],
-      score: Math.floor(Math.random() * 30) + 30,
+      id, name: newLead.name, email: newLead.email, phone: newLead.phone,
+      status: 'new' as LeadStatus, source: newLead.source, budget: newLead.budget,
+      projectInterest: newLead.projectInterest, assignedTo: assignee.id,
+      assignedToName: assignee.name, createdAt: now, lastActivity: now, notes, score: Math.floor(Math.random() * 30) + 30,
     };
-    // We need addLead in context — will add it
     (window as any).__addLeadTemp?.(lead);
     addActivity({
       id: `a-${Date.now()}`, leadId: id, leadName: newLead.name,
       type: 'note', description: `New lead created: ${newLead.name}`,
-      createdAt: new Date().toISOString(), createdBy: 'Rajesh Kumar',
+      createdAt: now, createdBy: 'Rajesh Kumar',
     });
-    setNewLead({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website', assignedTo: 'u3' });
+    setNewLead({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website', assignedTo: 'u3', initialRemark: '' });
     setAddOpen(false);
     toast.success('Lead added successfully!');
   };
@@ -129,6 +120,10 @@ const Leads = () => {
                       {salesExecs.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Initial Remark</label>
+                  <Input placeholder="e.g., Interested in 3BHK east-facing..." value={newLead.initialRemark} onChange={e => setNewLead(p => ({ ...p, initialRemark: e.target.value }))} />
                 </div>
                 <Button className="w-full" onClick={handleAddLead} disabled={!newLead.name.trim() || !newLead.phone.trim()}>
                   Add Lead
