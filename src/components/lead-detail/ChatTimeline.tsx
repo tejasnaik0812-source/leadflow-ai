@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Phone, Mail, MessageCircle, MapPin, FileText, ArrowRight, CalendarIcon, Clock } from 'lucide-react';
+import { Phone, Mail, MessageCircle, MapPin, FileText, ArrowRight, CalendarIcon, Clock, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -16,13 +16,13 @@ export interface TimelineEntry {
 const activityIcons: Record<string, React.ElementType> = {
   call: Phone, email: Mail, whatsapp: MessageCircle, site_visit: MapPin,
   note: FileText, status_change: ArrowRight, meeting: CalendarIcon, follow_up: Clock,
-  remark: MessageCircle,
+  remark: MessageCircle, site_visit_completed: CheckCircle2,
 };
 
 const typeLabels: Record<string, string> = {
   call: 'Call', email: 'Email', whatsapp: 'WhatsApp', site_visit: 'Site Visit',
   note: 'Note', status_change: 'Status Change', meeting: 'Meeting', follow_up: 'Follow-up',
-  remark: 'Remark',
+  remark: 'Remark', site_visit_completed: 'Site Visit Completed',
 };
 
 function formatTime(d: string) {
@@ -77,6 +77,7 @@ export function ChatTimeline({ entries }: { entries: TimelineEntry[] }) {
           {items.map((item) => {
             const Icon = activityIcons[item.type] || FileText;
             const isSystem = item.type === 'status_change';
+            const isSiteVisitCompleted = item.type === 'site_visit_completed';
 
             if (isSystem) {
               return (
@@ -84,6 +85,25 @@ export function ChatTimeline({ entries }: { entries: TimelineEntry[] }) {
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full">
                     <ArrowRight className="h-3 w-3" />
                     <span>{item.text}</span>
+                  </div>
+                </div>
+              );
+            }
+
+            if (isSiteVisitCompleted) {
+              return (
+                <div key={item.id} className="flex justify-center animate-fade-in">
+                  <div className="border border-success/30 bg-success/5 rounded-xl px-4 py-3 max-w-[90%] space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <span className="text-sm font-semibold text-success">Site Visit Completed</span>
+                    </div>
+                    <p className="text-sm leading-relaxed pl-6">{item.text}</p>
+                    <div className="flex items-center gap-2 pl-6">
+                      <span className="text-[10px] text-muted-foreground font-medium">{item.by}</span>
+                      <span className="text-[10px] text-muted-foreground">·</span>
+                      <span className="text-[10px] text-muted-foreground">{formatTime(item.date)}</span>
+                    </div>
                   </div>
                 </div>
               );
