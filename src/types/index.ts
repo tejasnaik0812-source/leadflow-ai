@@ -37,7 +37,7 @@ export interface Note {
   createdBy: string;
 }
 
-export type ActivityType = 'call' | 'email' | 'whatsapp' | 'site_visit' | 'note' | 'status_change' | 'meeting';
+export type ActivityType = 'call' | 'email' | 'whatsapp' | 'site_visit' | 'site_visit_completed' | 'note' | 'status_change' | 'meeting';
 
 export interface Activity {
   id: string;

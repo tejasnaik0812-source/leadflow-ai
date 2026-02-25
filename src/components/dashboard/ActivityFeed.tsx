@@ -1,5 +1,5 @@
 import { Activity, ActivityType } from '@/types';
-import { Phone, Mail, MessageCircle, MapPin, FileText, ArrowRight, Calendar } from 'lucide-react';
+import { Phone, Mail, MessageCircle, MapPin, FileText, ArrowRight, Calendar, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
@@ -10,6 +10,7 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
   note: FileText,
   status_change: ArrowRight,
   meeting: Calendar,
+  site_visit_completed: CheckCircle2,
 };
 
 const activityColors: Record<ActivityType, string> = {
@@ -20,6 +21,7 @@ const activityColors: Record<ActivityType, string> = {
   note: 'bg-muted text-muted-foreground',
   status_change: 'bg-primary/10 text-primary',
   meeting: 'bg-chart-3/10 text-foreground',
+  site_visit_completed: 'bg-success/10 text-success',
 };
 
 interface ActivityFeedProps {

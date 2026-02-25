@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useCRM } from '@/context/CRMContext';
@@ -5,19 +6,24 @@ import { LEAD_STATUS_CONFIG, LeadStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { mockUsers } from '@/data/mockData';
 import { toast } from 'sonner';
-import { ArrowLeft, Phone, Mail, MessageCircle, MapPin } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MessageCircle, MapPin, CheckCircle2 } from 'lucide-react';
 import { ChatTimeline, TimelineEntry } from '@/components/lead-detail/ChatTimeline';
 import { ChatInput } from '@/components/lead-detail/ChatInput';
 import { LeadInfoCard } from '@/components/lead-detail/LeadInfoCard';
+import { Badge } from '@/components/ui/badge';
 
 const LeadDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getLeadById, updateLead, addNoteToLead, addActivity, addTask, getActivitiesForLead, getTasksForLead } = useCRM();
+  const { getLeadById, updateLead, addNoteToLead, addActivity, addTask, getActivitiesForLead, getTasksForLead, getVisitsForLead, updateVisit } = useCRM();
+  const [feedbackMode, setFeedbackMode] = useState(false);
+  const [completingVisitId, setCompletingVisitId] = useState<string | null>(null);
+  const chatInputRef = useRef<{ focus: () => void }>(null);
 
   const lead = getLeadById(id || '');
   const leadActivities = getActivitiesForLead(id || '');
   const leadTasks = getTasksForLead(id || '');
+  const leadVisits = getVisitsForLead(id || '');
 
   if (!lead) {
     return (
@@ -32,6 +38,8 @@ const LeadDetail = () => {
     );
   }
 
+  const scheduledVisits = leadVisits.filter(v => v.status === 'scheduled');
+
   // Build unified timeline
   const timeline: TimelineEntry[] = [
     ...leadActivities.map(a => ({
@@ -44,10 +52,36 @@ const LeadDetail = () => {
   ];
 
   const handleSendMessage = (message: string, followUpDate?: Date) => {
-    const currentUser = mockUsers[0]; // Rajesh Kumar (logged-in user)
+    const currentUser = mockUsers[0];
     const now = new Date().toISOString();
-    const noteId = `n-${Date.now()}`;
 
+    if (feedbackMode && completingVisitId) {
+      // Site visit completion feedback
+      updateVisit(completingVisitId, {
+        status: 'completed',
+        outcome: message,
+        notes: message,
+      });
+
+      addActivity({
+        id: `a-${Date.now()}`, leadId: lead.id, leadName: lead.name,
+        type: 'site_visit_completed',
+        description: message,
+        createdAt: now, createdBy: currentUser.name,
+      });
+
+      addNoteToLead(lead.id, {
+        id: `n-${Date.now()}`, content: `Site visit feedback: ${message}`, createdAt: now, createdBy: currentUser.name,
+      });
+
+      toast.success('Site visit marked as completed!');
+      setFeedbackMode(false);
+      setCompletingVisitId(null);
+      return;
+    }
+
+    // Normal remark flow
+    const noteId = `n-${Date.now()}`;
     addNoteToLead(lead.id, {
       id: noteId, content: message, createdAt: now, createdBy: currentUser.name,
     });
@@ -71,6 +105,18 @@ const LeadDetail = () => {
     }
 
     toast.success(followUpDate ? 'Remark & follow-up saved!' : 'Remark added!');
+  };
+
+  const handleSiteVisitComplete = (visitId: string) => {
+    setCompletingVisitId(visitId);
+    setFeedbackMode(true);
+    // Focus will happen via ChatInput's useEffect or ref
+    setTimeout(() => chatInputRef.current?.focus(), 100);
+  };
+
+  const handleCancelFeedback = () => {
+    setFeedbackMode(false);
+    setCompletingVisitId(null);
   };
 
   const handleSaveLead = (data: Partial<typeof lead>) => {
@@ -119,9 +165,39 @@ const LeadDetail = () => {
 
         {/* Body: sidebar + chat */}
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 overflow-hidden">
-          {/* Left sidebar - lead info (collapsible on mobile) */}
+          {/* Left sidebar */}
           <div className="lg:w-72 shrink-0 space-y-3 overflow-y-auto lg:max-h-full">
             <LeadInfoCard lead={lead} onSave={handleSaveLead} />
+
+            {/* Scheduled site visits with completion action */}
+            {scheduledVisits.length > 0 && (
+              <div className="glass-card border-border/50 rounded-xl p-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">
+                  Scheduled Visits ({scheduledVisits.length})
+                </p>
+                <div className="space-y-2">
+                  {scheduledVisits.map(visit => (
+                    <div key={visit.id} className="text-xs p-2.5 rounded-lg bg-muted/30 border border-border/20 space-y-2">
+                      <div>
+                        <p className="font-medium">{visit.project}</p>
+                        <p className="text-muted-foreground">{visit.scheduledDate} · {visit.scheduledTime}</p>
+                        <p className="text-muted-foreground">{visit.assignedToName}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full h-7 text-[11px] gap-1.5 border-success/30 text-success hover:bg-success/10 hover:text-success"
+                        onClick={() => handleSiteVisitComplete(visit.id)}
+                        disabled={feedbackMode}
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        Mark Completed
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Pending tasks summary */}
             {pendingTasks.length > 0 && (
@@ -146,11 +222,23 @@ const LeadDetail = () => {
 
           {/* Chat area */}
           <div className="flex-1 flex flex-col min-h-0 glass-card border-border/50 rounded-xl overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-border/50 shrink-0">
+            <div className="px-4 py-2.5 border-b border-border/50 shrink-0 flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground">Activity & Remarks</p>
+              {feedbackMode && (
+                <Badge variant="secondary" className="text-[10px] gap-1 bg-success/10 text-success border-0 animate-fade-in">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Enter visit feedback below
+                </Badge>
+              )}
             </div>
             <ChatTimeline entries={timeline} />
-            <ChatInput onSend={handleSendMessage} />
+            <ChatInput
+              ref={chatInputRef}
+              onSend={handleSendMessage}
+              placeholder={feedbackMode ? 'Add site visit feedback...' : 'Add a remark or follow-up...'}
+              feedbackMode={feedbackMode}
+              onCancelFeedback={handleCancelFeedback}
+            />
           </div>
         </div>
       </div>
