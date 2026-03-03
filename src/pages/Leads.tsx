@@ -14,7 +14,7 @@ import { mockUsers, mockProjects } from '@/data/mockData';
 import { toast } from 'sonner';
 
 const Leads = () => {
-  const { leads, updateLead, addActivity, addLead: addLeadToContext, refreshData, loading } = useCRM();
+  const { leads, addLead } = useCRM();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -31,31 +31,54 @@ const Leads = () => {
 
   const salesExecs = mockUsers.filter(u => u.role === 'sales_executive' || u.role === 'sales_manager');
 
-const handleAddLead = async () => {
+  const handleAddLead = async () => {
   if (!newLead.name.trim() || !newLead.phone.trim()) {
     toast.error('Name and phone are required');
     return;
   }
 
-  const now = new Date().toISOString();
-  const assignee = mockUsers.find(u => u.id === newLead.assignedTo) || mockUsers[2];
+  try {
+    const now = new Date().toISOString();
 
-  await addLeadToContext({
-    id: `temp-${Date.now()}`,
-    name: newLead.name,
-    email: newLead.email,
-    phone: newLead.phone,
-    status: 'new',
-    source: newLead.source,
-    budget: newLead.budget,
-    projectInterest: newLead.projectInterest,
-    assignedTo: assignee.id,
-    assignedToName: assignee.name,
-    createdAt: now,
-    lastActivity: now,
-    notes: [],
-    score: 50,
-  });
+    const assignee = salesExecs.find(u => u.id === newLead.assignedTo);
+
+    const leadObj = {
+      name: newLead.name,
+      email: newLead.email,
+      phone: newLead.phone,
+      status: 'new' as LeadStatus,
+      source: newLead.source,
+      budget: newLead.budget,
+      projectInterest: newLead.projectInterest,
+      assignedTo: newLead.assignedTo,
+      assignedToName: assignee?.name || '',
+      createdAt: now,
+      lastActivity: now,
+      score: Math.floor(Math.random() * 30) + 30,
+    };
+
+    await addLead(leadObj);
+
+    toast.success('Lead added successfully!');
+
+    setNewLead({
+      name: '',
+      email: '',
+      phone: '',
+      budget: '',
+      projectInterest: '',
+      source: 'website',
+      assignedTo: 'u3',
+      initialRemark: '',
+    });
+
+    setAddOpen(false);
+
+  } catch (err) {
+    console.error('Add lead failed:', err);
+    toast.error('Failed to save lead');
+  }
+};
 
   if (newLead.initialRemark?.trim()) {
     // The note will be added after lead is in DB via refreshData
