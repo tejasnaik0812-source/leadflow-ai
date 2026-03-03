@@ -1,6 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
-import { mockConversations } from '@/data/mockData';
-import { useState } from 'react';
+import { useCRM } from '@/context/CRMContext';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Send, MessageCircle, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Conversation } from '@/types';
 
 const Conversations = () => {
-  const [selected, setSelected] = useState<Conversation | null>(mockConversations[0]);
+  const { conversations } = useCRM();
+  const [selected, setSelected] = useState<Conversation | null>(null);
   const [message, setMessage] = useState('');
   const [showChat, setShowChat] = useState(false);
+
+  useEffect(() => {
+    if (conversations.length > 0 && !selected) {
+      setSelected(conversations[0]);
+    }
+  }, [conversations, selected]);
 
   const handleSelectConversation = (conv: Conversation) => {
     setSelected(conv);
@@ -38,7 +45,7 @@ const Conversations = () => {
               'border-r border-border/50 overflow-y-auto',
               showChat ? 'hidden lg:block' : 'block'
             )}>
-              {mockConversations.map(conv => (
+              {conversations.map(conv => (
                 <div
                   key={conv.id}
                   onClick={() => handleSelectConversation(conv)}

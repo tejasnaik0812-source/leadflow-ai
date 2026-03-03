@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useCRM } from '@/context/CRMContext';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG, LeadStatus, LeadSource } from '@/types';
@@ -14,7 +14,7 @@ import { mockUsers, mockProjects } from '@/data/mockData';
 import { toast } from 'sonner';
 
 const Leads = () => {
-  const { leads, updateLead, addActivity } = useCRM();
+  const { leads, updateLead, addActivity, addLead: addLeadToContext, refreshData, loading } = useCRM();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -37,57 +37,33 @@ const handleAddLead = async () => {
     return;
   }
 
-  try {
-    const now = new Date().toISOString();
+  const now = new Date().toISOString();
+  const assignee = mockUsers.find(u => u.id === newLead.assignedTo) || mockUsers[2];
 
-    const { data, error } = await supabase
-      .from('leads')
-      .insert([
-        {
-          name: newLead.name,
-          email: newLead.email || null,
-          phone: newLead.phone,
-          budget: newLead.budget || null,
-          project_interest: newLead.projectInterest || null,
-          source: newLead.source,
-          status: 'new',
-          created_at: now,
-        },
-      ])
-      .select();
+  await addLeadToContext({
+    id: `temp-${Date.now()}`,
+    name: newLead.name,
+    email: newLead.email,
+    phone: newLead.phone,
+    status: 'new',
+    source: newLead.source,
+    budget: newLead.budget,
+    projectInterest: newLead.projectInterest,
+    assignedTo: assignee.id,
+    assignedToName: assignee.name,
+    createdAt: now,
+    lastActivity: now,
+    notes: [],
+    score: 50,
+  });
 
-    console.log("Insert result:", data);
-    console.log("Insert error:", error);
-
-    if (error) {
-      console.error('Insert error:', error);
-      toast.error('Failed to save lead');
-      return;
-    }
-
-    toast.success('Lead added successfully!');
-
-    // Reset form
-    setNewLead({
-      name: '',
-      email: '',
-      phone: '',
-      budget: '',
-      projectInterest: '',
-      source: 'website',
-      assignedTo: 'u3',
-      initialRemark: '',
-    });
-
-    setAddOpen(false);
-
-    // Reload page to reflect new data (temporary simple solution)
-    window.location.reload();
-
-  } catch (err) {
-    console.error('Unexpected error:', err);
-    toast.error('Something went wrong');
+  if (newLead.initialRemark?.trim()) {
+    // The note will be added after lead is in DB via refreshData
   }
+
+  toast.success('Lead added successfully!');
+  setNewLead({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website', assignedTo: 'u3', initialRemark: '' });
+  setAddOpen(false);
 };
 
   return (
