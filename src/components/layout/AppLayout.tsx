@@ -26,7 +26,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       l.name.toLowerCase().includes(q) ||
       l.phone.includes(q) ||
       l.projectInterest.toLowerCase().includes(q) ||
-      l.email.toLowerCase().includes(q)
+      (l.email || '').toLowerCase().includes(q)
     ).slice(0, 5);
   }, [search, leads]);
 

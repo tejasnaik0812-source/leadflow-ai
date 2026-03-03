@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useCRM } from '@/context/CRMContext';
 import { LEAD_STATUS_CONFIG, LeadStatus } from '@/types';
 import { Button } from '@/components/ui/button';
-import { mockUsers } from '@/data/mockData';
+import { mockUsers } from '@/data/mockData'; // kept for user lookup only
 import { toast } from 'sonner';
 import { ArrowLeft, Phone, Mail, MessageCircle, MapPin, CheckCircle2 } from 'lucide-react';
 import { ChatTimeline, TimelineEntry } from '@/components/lead-detail/ChatTimeline';
