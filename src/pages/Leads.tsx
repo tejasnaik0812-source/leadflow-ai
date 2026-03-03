@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useCRM } from '@/context/CRMContext';
 import { LEAD_STATUS_CONFIG, LEAD_SOURCE_CONFIG, LeadStatus, LeadSource } from '@/types';
@@ -30,33 +31,61 @@ const Leads = () => {
 
   const salesExecs = mockUsers.filter(u => u.role === 'sales_executive' || u.role === 'sales_manager');
 
-  const handleAddLead = () => {
-    if (!newLead.name.trim() || !newLead.phone.trim()) {
-      toast.error('Name and phone are required');
+const handleAddLead = async () => {
+  if (!newLead.name.trim() || !newLead.phone.trim()) {
+    toast.error('Name and phone are required');
+    return;
+  }
+
+  try {
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('leads')
+      .insert([
+        {
+          name: newLead.name,
+          email: newLead.email || null,
+          phone: newLead.phone,
+          budget: newLead.budget || null,
+          project_interest: newLead.projectInterest || null,
+          source: newLead.source,
+          status: 'new',
+          created_at: now,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Insert error:', error);
+      toast.error('Failed to save lead');
       return;
     }
-    const assignee = mockUsers.find(u => u.id === newLead.assignedTo) || mockUsers[2];
-    const id = `l-${Date.now()}`;
-    const now = new Date().toISOString();
-    const notes = newLead.initialRemark.trim()
-      ? [{ id: `n-${Date.now()}`, content: newLead.initialRemark.trim(), createdAt: now, createdBy: 'Rajesh Kumar' }]
-      : [];
-    const lead = {
-      id, name: newLead.name, email: newLead.email, phone: newLead.phone,
-      status: 'new' as LeadStatus, source: newLead.source, budget: newLead.budget,
-      projectInterest: newLead.projectInterest, assignedTo: assignee.id,
-      assignedToName: assignee.name, createdAt: now, lastActivity: now, notes, score: Math.floor(Math.random() * 30) + 30,
-    };
-    (window as any).__addLeadTemp?.(lead);
-    addActivity({
-      id: `a-${Date.now()}`, leadId: id, leadName: newLead.name,
-      type: 'note', description: `New lead created: ${newLead.name}`,
-      createdAt: now, createdBy: 'Rajesh Kumar',
-    });
-    setNewLead({ name: '', email: '', phone: '', budget: '', projectInterest: '', source: 'website', assignedTo: 'u3', initialRemark: '' });
-    setAddOpen(false);
+
     toast.success('Lead added successfully!');
-  };
+
+    // Reset form
+    setNewLead({
+      name: '',
+      email: '',
+      phone: '',
+      budget: '',
+      projectInterest: '',
+      source: 'website',
+      assignedTo: 'u3',
+      initialRemark: '',
+    });
+
+    setAddOpen(false);
+
+    // Reload page to reflect new data (temporary simple solution)
+    window.location.reload();
+
+  } catch (err) {
+    console.error('Unexpected error:', err);
+    toast.error('Something went wrong');
+  }
+};
 
   return (
     <AppLayout>
