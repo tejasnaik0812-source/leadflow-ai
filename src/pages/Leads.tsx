@@ -56,6 +56,9 @@ const handleAddLead = async () => {
       ])
       .select();
 
+    console.log("Insert result:", data);
+    console.log("Insert error:", error);
+
     if (error) {
       console.error('Insert error:', error);
       toast.error('Failed to save lead');
