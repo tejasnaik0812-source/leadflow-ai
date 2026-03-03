@@ -237,6 +237,5 @@ const Leads = () => {
       </div>
     </AppLayout>
   );
-};
 
 export default Leads;
